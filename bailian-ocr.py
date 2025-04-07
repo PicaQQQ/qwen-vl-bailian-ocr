@@ -7,19 +7,19 @@ from openai import OpenAI
 import time
 import concurrent
 
+BASE_URL="https://dashscope.aliyuncs.com/compatible-mode/v1"
+
+
 #图片分辨率 最大 28*28*3000    注意 28*28*3600差不多是1920*1080 
-MAX_PIXELS=28*28*3600
 
 #并发数量
 MAX_WORKERS=10
 
 #设置为APIKEY
-DASHSCOPE_API_KEY='xxxxxxx'	
 
 #设置模型
 #MODEL_NAME="qwen2.5-vl-72b-instruct"
 #MODEL_NAME="qwen2.5-vl-3b-instruct"
-MODEL_NAME="qwen2.5-vl-7b-instruct"
 
 #识别提示词
 #默认提示词
@@ -44,25 +44,32 @@ def ocr_image_with_api(base64_image, image_type):
     client = OpenAI(
         api_key=DASHSCOPE_API_KEY,
         base_url="https://dashscope.aliyuncs.com/compatible-mode/v1",
+        base_url=BASE_URL,
     )
-    completion = client.chat.completions.create(
-        model=MODEL_NAME,
-        messages=[
-            {
-                "role": "user",
-                "content": [
-                    {
-                        "type": "image_url",
-                        "image_url": {"url": image_data},
-                        "min_pixels": 28 * 28 * 4,      # 最小像素数
-                        "max_pixels": MAX_PIXELS    # 最大像素数
-                    },
-                    {"type": "text", "text": PROMPT_TEXT},
-                ],
-            }
-        ],
-    )
-    return completion.choices[0].message.content
+    status="success"
+    try:
+        completion = client.chat.completions.create(
+            model=MODEL_NAME,
+            messages=[
+                {
+                    "role": "user",
+                    "content": [
+                        {
+                            "type": "image_url",
+                            "image_url": {"url": image_data},
+                            "min_pixels": 28 * 28 * 4,      # 最小像素数
+                            "max_pixels": MAX_PIXELS    # 最大像素数
+                        },
+                        {"type": "text", "text": PROMPT_TEXT},
+                    ],
+                }
+            ],
+        )
+        result=completion.choices[0].message.content
+    except Exception as e:
+        status="failed"
+        result=str(e)
+    return status,result
 
 
 def process_image_task(filename, directory):
@@ -100,11 +107,15 @@ def process_image_task(filename, directory):
         encoded_data = base64.b64encode(buffered.getvalue()).decode("utf-8")
     
     print(f"正在处理 {filename} ...")
-    ocr_text = ocr_image_with_api(encoded_data, image_type)
-    output_file = os.path.join(directory, f"{name_without_ext}.txt")
-    with open(output_file, "w", encoding="utf-8") as f:
-        f.write(ocr_text)
-    print(f"已完成 {filename} ...")
+    status,ocr_text = ocr_image_with_api(encoded_data, image_type)
+    if status=="success":
+        output_file = os.path.join(directory, f"{name_without_ext}.txt")
+        with open(output_file, "w", encoding="utf-8") as f:
+            f.write(ocr_text)
+        print(f"已完成 {filename} ...")
+    else:
+        print(f"失败 {filename} ...")
+        print(f"错误信息 {ocr_text} ...")
 
     return "Over"
 
