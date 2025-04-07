@@ -11,15 +11,18 @@ BASE_URL="https://dashscope.aliyuncs.com/compatible-mode/v1"
 
 
 #图片分辨率 最大 28*28*3000    注意 28*28*3600差不多是1920*1080 
+MAX_PIXELS=28*28*1800
 
 #并发数量
 MAX_WORKERS=10
 
 #设置为APIKEY
+DASHSCOPE_API_KEY='xxx'	
 
 #设置模型
 #MODEL_NAME="qwen2.5-vl-72b-instruct"
 #MODEL_NAME="qwen2.5-vl-3b-instruct"
+MODEL_NAME="qwen2.5-vl-7b-instruct"
 
 #识别提示词
 #默认提示词
@@ -43,7 +46,6 @@ def ocr_image_with_api(base64_image, image_type):
     
     client = OpenAI(
         api_key=DASHSCOPE_API_KEY,
-        base_url="https://dashscope.aliyuncs.com/compatible-mode/v1",
         base_url=BASE_URL,
     )
     status="success"
